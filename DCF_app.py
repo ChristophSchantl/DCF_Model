@@ -312,7 +312,7 @@ with st.sidebar:
 
     col_t = st.columns([3, 1])
     with col_t[0]:
-        ticker = st.text_input("Ticker", key="ticker")
+        st.text_input("Ticker", key="ticker")
     with col_t[1]:
         if st.button("↻ Live", help="Fetch price & shares via yfinance"):
             px, sh_m = fetch_live_defaults(st.session_state.ticker.strip())
@@ -322,27 +322,24 @@ with st.sidebar:
                 st.session_state.shares_m = round(float(sh_m), 2)
             st.rerun()
 
-    price = st.number_input("Price", min_value=0.0, value=float(st.session_state.price), step=0.01, key="price")
+    st.number_input("Price", min_value=0.0, value=float(st.session_state.price), step=0.01, key="price")
 
-    # Start FCFE + fetchers
-    # Start FCFE + fetchers (buttons first to avoid state-write conflicts)
-fcfe_cols = st.columns([1, 1, 3])
-with fcfe_cols[0]:
-    ttm_clicked = st.button("↻ TTM", help="Fetch FCFE from last 4 quarters")
-with fcfe_cols[1]:
-    fy_clicked = st.button("↻ FY", help="Fetch FCFE from last fiscal year")
+    # Start FCFE fetchers + input
+    fcfe_cols = st.columns([1, 1, 3], gap="small")
+    with fcfe_cols[0]:
+        ttm_clicked = st.button("↻ TTM", help="Fetch FCFE from last 4 quarters")
+    with fcfe_cols[1]:
+        fy_clicked = st.button("↻ FY", help="Fetch FCFE from last fiscal year")
+    with fcfe_cols[2]:
+        st.number_input("Start FCFE (USD m)", min_value=0.0, value=float(st.session_state.start_fcfe), step=10.0, key="start_fcfe")
 
-# If one of the fetch buttons is clicked, update state BEFORE the widget is created
-if ttm_clicked or fy_clicked:
-    mode = "TTM" if ttm_clicked else "FY"
-    v, br, cur = fetch_start_fcfe_from_yf(st.session_state.ticker.strip(), mode=mode)
-    if v is not None:
-        st.session_state["start_fcfe"] = round(float(v), 2)
-        st.session_state["_fcfe_breakdown"] = {"mode": mode, "currency": cur, **br}
-    st.rerun()
-
-with fcfe_cols[2]:
-    start_fcfe = st.number_input("Start FCFE (USD m)", min_value=0.0, value=float(st.session_state.start_fcfe), step=10.0, key="start_fcfe")
+    if ttm_clicked or fy_clicked:
+        mode = "TTM" if ttm_clicked else "FY"
+        v, br, cur = fetch_start_fcfe_from_yf(st.session_state.ticker.strip(), mode=mode)
+        if v is not None:
+            st.session_state["start_fcfe"] = round(float(v), 2)
+            st.session_state["_fcfe_breakdown"] = {"mode": mode, "currency": cur, **br}
+        st.rerun()
 
     brk = st.session_state.get("_fcfe_breakdown")
     if brk:
@@ -352,27 +349,27 @@ with fcfe_cols[2]:
         )
 
     # Core knobs
-    horizon = st.select_slider("Horizon (years)", options=list(range(5, 11)), value=int(st.session_state.horizon), key="horizon")
-    growth = st.slider("Growth %/yr", min_value=-10.0, max_value=25.0, value=float(st.session_state.growth), step=0.1, key="growth")
-    shares_m = st.number_input("Shares (m)", min_value=0.01, value=float(st.session_state.shares_m), step=0.01, key="shares_m")
+    st.select_slider("Horizon (years)", options=list(range(5, 11)), value=int(st.session_state.horizon), key="horizon")
+    st.slider("Growth %/yr", min_value=-10.0, max_value=25.0, value=float(st.session_state.growth), step=0.1, key="growth")
+    st.number_input("Shares (m)", min_value=0.01, value=float(st.session_state.shares_m), step=0.01, key="shares_m")
 
     with st.expander("Advanced", expanded=False):
         c1, c2 = st.columns(2)
         with c1:
-            rf = st.text_input("Rf %", key="rf")
-            beta_u = st.number_input("β unlevered", min_value=0.0, max_value=5.0, value=float(st.session_state.beta_u), step=0.01, key="beta_u")
-            beta_floor = st.slider("β floor", min_value=0.0, max_value=2.0, value=float(st.session_state.beta_floor), step=0.1, key="beta_floor")
+            st.text_input("Rf %", key="rf")
+            st.number_input("β unlevered", min_value=0.0, max_value=5.0, value=float(st.session_state.beta_u), step=0.01, key="beta_u")
+            st.slider("β floor", min_value=0.0, max_value=2.0, value=float(st.session_state.beta_floor), step=0.1, key="beta_floor")
         with c2:
-            erp = st.text_input("ERP %", key="erp")
-            tax = st.text_input("Tax %", key="tax")
-            dme = st.text_input("D/ME %", key="dme")
-            beta_cap = st.slider("β cap", min_value=0.5, max_value=3.0, value=float(st.session_state.beta_cap), step=0.1, key="beta_cap")
-        g_perp = st.text_input("g perp %", key="g_perp")
+            st.text_input("ERP %", key="erp")
+            st.text_input("Tax %", key="tax")
+            st.text_input("D/ME %", key="dme")
+            st.slider("β cap", min_value=0.5, max_value=3.0, value=float(st.session_state.beta_cap), step=0.1, key="beta_cap")
+        st.text_input("g perp %", key="g_perp")
 
     st.markdown("---")
     st.subheader("Terminal‑Value control")
-    tv_target = st.number_input("TV share target (0..1)", min_value=0.05, max_value=0.95, value=float(st.session_state.tv_target), step=0.01, key="tv_target")
-    lock_tv = st.checkbox("Lock TV share (solve g)", value=bool(st.session_state.lock_tv), key="lock_tv")
+    st.number_input("TV share target (0..1)", min_value=0.05, max_value=0.95, value=float(st.session_state.tv_target), step=0.01, key="tv_target")
+    st.checkbox("Lock TV share (solve g)", value=bool(st.session_state.lock_tv), key="lock_tv")
     if st.button("Cap TV share now"):
         st.session_state["__cap_tv_now__"] = True
         st.rerun()
@@ -625,3 +622,4 @@ else:
                 )
 
 st.caption("Model: FCFE DCF, levered β via Hamada + Blume, CAPM cost of equity. Perpetual g < r constraint enforced.")
+
