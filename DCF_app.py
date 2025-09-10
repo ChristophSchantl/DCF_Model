@@ -447,19 +447,6 @@ else:
                 unsafe_allow_html=True,
             )
 
-    # ── KPI Second Row ─────────────────────────────────
-    sub = st.container()
-    with sub:
-        c = st.columns(1)
-        with c[0]:
-            color_tv = "#22c55e" if (0 < float(st.session_state.tv_target) < 1 and tv_share <= float(st.session_state.tv_target)) else "#ef4444"
-            st.markdown(
-                f"<div class='kpi'><h4>TV Share</h4><div class='v'><span style='color:{color_tv}'>{tv_share*100:.1f}%</span>"
-                + (f" <span class='subtle'>(limit {float(st.session_state.tv_target)*100:.0f}%)</span>" if 0 < float(st.session_state.tv_target) < 1 else "")
-                + "</div></div>",
-                unsafe_allow_html=True,
-            )
-
     # ── Charts Row ─────────────────────────────────────
     c1, c2 = st.columns([1.6, 1.0], gap="large")
     with c1:
