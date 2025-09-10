@@ -35,7 +35,7 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-.kpi{background:#0b1220;color:#e6e9ef;padding:6px 8px;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.1);display:inline-block;min-width:140px}
+.kpi{background:#0b1220;color:#e6e9ef;padding:6px 10px;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.12);display:inline-block;min-width:140px;margin:8px 12px}
 .kpi h4{margin:0;font-size:11px;color:#b3b8c4;line-height:1.1}
 .kpi .v{font-size:16px;font-weight:700;line-height:1.1}
 .subtle{color:#94a3b8;font-size:10px}
@@ -338,33 +338,31 @@ else:
     tv_share = result.pv_tv_m / (result.pv_stage1_m + result.pv_tv_m) if (result.pv_stage1_m + result.pv_tv_m) > 0 else 0.0
 
     # KPIs row
-    k1, k2, k3, k4 = st.columns([1.2, 1.2, 1.0, 1.0])
-    with k1:
-        st.markdown(f"<div class='kpi'><h4>Fair Value / Share</h4><div class='v'>{format_usd(result.fair_ps)}</div></div>", unsafe_allow_html=True)
-    with k2:
-        st.markdown(
-            f"<div class='kpi'><h4>Current Price</h4><div class='v'>{format_usd(float(st.session_state.price))} "
-            f"<span class='subtle'>&nbsp;(<span style='color:{tag_color}'>{tag} {abs(disc)*100:.1f}%</span>)</span></div></div>",
-            unsafe_allow_html=True,
-        )
-    with k3:
-        st.markdown(f"<div class='kpi'><h4>Cost of Equity</h4><div class='v'>{result.r*100:.2f}%</div></div>", unsafe_allow_html=True)
-    with k4:
-        st.markdown(f"<div class='kpi'><h4>Levered Beta</h4><div class='v'>{result.beta:.2f}</div></div>", unsafe_allow_html=True)
+    k1, k2, k3, k4, k5 = st.columns([1.1, 1.1, 1.0, 1.0, 1.2])
+with k1:
+    st.markdown(f"<div class='kpi'><h4>Fair Value / Share</h4><div class='v'>{format_usd(result.fair_ps)}</div></div>", unsafe_allow_html=True)
+with k2:
+    st.markdown(f"<div class='kpi'><h4>Current Price</h4><div class='v'>{format_usd(float(st.session_state.price))}</div></div>", unsafe_allow_html=True)
+with k3:
+    st.markdown(f"<div class='kpi'><h4>Cost of Equity</h4><div class='v'>{result.r*100:.2f}%</div></div>", unsafe_allow_html=True)
+with k4:
+    st.markdown(f"<div class='kpi'><h4>Levered Beta</h4><div class='v'>{result.beta:.2f}</div></div>", unsafe_allow_html=True)
+with k5:
+    st.markdown(f"<div class='kpi'><h4>Valuation vs Price</h4><div class='v'><span style='color:{tag_color}'>{('UNDERVALUED' if disc>0 else 'OVERVALUED')} {abs(disc)*100:.1f}%</span></div></div>", unsafe_allow_html=True)
 
-    k5, k6, k7 = st.columns([1.0, 1.0, 1.0])
-    with k5:
-        st.markdown(f"<div class='kpi'><h4>PV Stage 1</h4><div class='v'>{format_usd(result.pv_stage1_m*1e6)}</div></div>", unsafe_allow_html=True)
-    with k6:
-        st.markdown(f"<div class='kpi'><h4>PV Terminal</h4><div class='v'>{format_usd(result.pv_tv_m*1e6)}</div></div>", unsafe_allow_html=True)
-    with k7:
-        color_tv = "#22c55e" if (0 < float(st.session_state.tv_target) < 1 and tv_share <= float(st.session_state.tv_target)) else "#ef4444"
-        st.markdown(
-            f"<div class='kpi'><h4>TV Share</h4><div class='v'><span style='color:{color_tv}'>{tv_share*100:.1f}%</span>"
-            + (f" <span class='subtle'>(limit {float(st.session_state.tv_target)*100:.0f}%)</span>" if 0 < float(st.session_state.tv_target) < 1 else "")
-            + "</div></div>",
-            unsafe_allow_html=True,
-        )
+    s1, s2, s3 = st.columns([1.0, 1.0, 1.0])
+with s1:
+    st.markdown(f"<div class='kpi'><h4>PV Stage 1</h4><div class='v'>{format_usd(result.pv_stage1_m*1e6)}</div></div>", unsafe_allow_html=True)
+with s2:
+    st.markdown(f"<div class='kpi'><h4>PV Terminal</h4><div class='v'>{format_usd(result.pv_tv_m*1e6)}</div></div>", unsafe_allow_html=True)
+with s3:
+    color_tv = "#22c55e" if (0 < float(st.session_state.tv_target) < 1 and tv_share <= float(st.session_state.tv_target)) else "#ef4444"
+    st.markdown(
+        f"<div class='kpi'><h4>TV Share</h4><div class='v'><span style='color:{color_tv}'>{tv_share*100:.1f}%</span>"
+        + (f" <span class='subtle'>(limit {float(st.session_state.tv_target)*100:.0f}%)</span>" if 0 < float(st.session_state.tv_target) < 1 else "")
+        + "</div></div>",
+        unsafe_allow_html=True,
+    )
 
     st.markdown(" ")
 
