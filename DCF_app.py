@@ -110,6 +110,48 @@ def fetch_live_defaults(tkr: str) -> Tuple[float | None, float | None]:
 # FCFE fetch from Yahoo Finance
 # ─────────────────────────────────────────────────────────────
 
+def fetch_levered_fcf_ttm(tkr: str) -> Tuple[Optional[float], Dict[str, float]]:
+    """Try Yahoo's leveredFreeCashflow (TTM). Fallback to computed FCFE TTM.
+    Returns (fcfe_m_usd, breakdown_dict).
+    breakdown contains: source, currency, fx, fcfe_m and optional cfo_m, capex_m, net_debt_m.
+    """
+    try:
+        y = yf.Ticker(tkr)
+        fi = getattr(y, "fast_info", None) or {}
+        info = y.info or {}
+        cur = (fi.get("currency") or info.get("currency") or "USD").upper()
+        # 1) Direct field from Yahoo 'info'
+        lfcf = None
+        for k in ("leveredFreeCashflow", "leveredFreeCashFlow", "levered_free_cashflow"):
+            if k in info and info[k] is not None:
+                try:
+                    lfcf = float(info[k])
+                    break
+                except Exception:
+                    pass
+        # FX to USD
+        rate = 1.0
+        if cur != "USD":
+            pair = ("GBPUSD=X" if cur == "GBP" else f"{cur}USD=X")
+            try:
+                fx = yf.Ticker(pair)
+                h = fx.history(period="5d")
+                if not h.empty:
+                    rate = float(h["Close"].iloc[-1])
+            except Exception:
+                rate = 1.0
+        if lfcf is not None:
+            v_m = (lfcf * rate) / 1e6
+            return v_m, {"source": "info.leveredFreeCashflow", "currency": cur, "fx": rate, "fcfe_m": v_m}
+        # 2) Fallback: compute FCFE from quarterly cashflow (TTM)
+        v, brk, cur2 = fetch_start_fcfe_from_yf(tkr, mode="TTM")
+        if v is not None:
+            brk.update({"source": "computed_TTM", "currency": cur2})
+            return v, brk
+        return None, {"source": "unavailable", "currency": cur, "fx": rate}
+    except Exception:
+        return None, {"source": "error", "currency": "USD", "fx": 1.0}
+
 def fetch_start_fcfe_from_yf(tkr: str, mode: str = "TTM") -> Tuple[Optional[float], Dict[str, float], str]:
     """Return (start_fcfe_m_USD, breakdown, reporting_currency).
     mode: "TTM" = sum last 4 quarters; "FY" = last fiscal year.
@@ -324,8 +366,24 @@ with st.sidebar:
 
     st.number_input("Price", min_value=0.0, value=float(st.session_state.price), step=0.01, key="price")
 
-    # Start FCFE (manual)
+    # Start FCFE auto-fill via Levered FCF (TTM)
+    lfcf_clicked = st.button("↻ LFCF TTM", help="Auto‑fill from Yahoo 'Levered Free Cash Flow' (TTM). Falls nicht verfügbar, FCFE TTM = CFO + CapEx + NetDebt.")
+    if lfcf_clicked:
+        v, br = fetch_levered_fcf_ttm(st.session_state.ticker.strip())
+        if v is not None:
+            st.session_state["start_fcfe"] = round(float(v), 2)
+            st.session_state["_fcfe_breakdown"] = br
+        st.rerun()
     st.number_input("Start FCFE (USD m)", min_value=0.0, value=float(st.session_state.start_fcfe), step=10.0, key="start_fcfe")
+    brk = st.session_state.get("_fcfe_breakdown")
+    if brk:
+        src = brk.get("source", "TTM")
+        cur = brk.get("currency", "USD")
+        fx = brk.get("fx", 1.0)
+        detail = ""
+        if all(k in brk for k in ("cfo_m","capex_m","net_debt_m")):
+            detail = f" | CFO={brk['cfo_m']:,.1f}m, CapEx={brk['capex_m']:,.1f}m, NetDebt={brk['net_debt_m']:,.1f}m"
+        st.caption(f"Start FCFE auto: {src} in {cur} → FX {fx:.4f}{detail}")
 
     # Core knobs
     st.select_slider("Horizon (years)", options=list(range(5, 11)), value=int(st.session_state.horizon), key="horizon")
@@ -442,7 +500,7 @@ else:
             badge_class = 'up' if disc>0 else 'down'
             st.markdown(
                 f"<div class='kpi'><h4>Valuation vs Price</h4><div class='v'><span class='badge {badge_class}'>"
-                f"{('UNDER-V' if disc>0 else 'OVER-V')} {abs(disc)*100:.1f}%" 
+                f"{('UNDERVALUED' if disc>0 else 'OVERVALUED')} {abs(disc)*100:.1f}%" 
                 f"</span></div></div>",
                 unsafe_allow_html=True,
             )
