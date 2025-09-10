@@ -324,29 +324,8 @@ with st.sidebar:
 
     st.number_input("Price", min_value=0.0, value=float(st.session_state.price), step=0.01, key="price")
 
-    # Start FCFE fetchers + input
-    fcfe_cols = st.columns([1, 1, 3], gap="small")
-    with fcfe_cols[0]:
-        ttm_clicked = st.button("↻ TTM", help="Fetch FCFE from last 4 quarters")
-    with fcfe_cols[1]:
-        fy_clicked = st.button("↻ FY", help="Fetch FCFE from last fiscal year")
-    with fcfe_cols[2]:
-        st.number_input("Start FCFE (USD m)", min_value=0.0, value=float(st.session_state.start_fcfe), step=10.0, key="start_fcfe")
-
-    if ttm_clicked or fy_clicked:
-        mode = "TTM" if ttm_clicked else "FY"
-        v, br, cur = fetch_start_fcfe_from_yf(st.session_state.ticker.strip(), mode=mode)
-        if v is not None:
-            st.session_state["start_fcfe"] = round(float(v), 2)
-            st.session_state["_fcfe_breakdown"] = {"mode": mode, "currency": cur, **br}
-        st.rerun()
-
-    brk = st.session_state.get("_fcfe_breakdown")
-    if brk:
-        st.caption(
-            f"FCFE {brk['mode']} in {brk['currency']} → CFO={brk['cfo_m']:,.1f}m, CapEx={brk['capex_m']:,.1f}m, "
-            f"NetDebt={brk['net_debt_m']:,.1f}m ⇒ FCFE={brk['fcfe_m']:,.1f}m USD"
-        )
+    # Start FCFE (manual)
+    st.number_input("Start FCFE (USD m)", min_value=0.0, value=float(st.session_state.start_fcfe), step=10.0, key="start_fcfe")
 
     # Core knobs
     st.select_slider("Horizon (years)", options=list(range(5, 11)), value=int(st.session_state.horizon), key="horizon")
@@ -622,4 +601,3 @@ else:
                 )
 
 st.caption("Model: FCFE DCF, levered β via Hamada + Blume, CAPM cost of equity. Perpetual g < r constraint enforced.")
-
