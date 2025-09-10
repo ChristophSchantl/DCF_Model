@@ -35,9 +35,12 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-.kpi{background:#0b1220;color:#e6e9ef;padding:6px 10px;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.12);display:inline-block;min-width:140px;margin:8px 12px}
+.kpi{background:#0b1220;color:#e6e9ef;padding:6px 10px;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.12);display:inline-block;min-width:140px;margin:14px 18px}
 .kpi h4{margin:0;font-size:11px;color:#b3b8c4;line-height:1.1}
 .kpi .v{font-size:16px;font-weight:700;line-height:1.1}
+.badge{padding:2px 6px;border-radius:6px;font-weight:800}
+.badge.up{background:rgba(34,197,94,.15);color:#22c55e}
+.badge.down{background:rgba(239,68,68,.15);color:#ef4444}
 .subtle{color:#94a3b8;font-size:10px}
 .section{margin-top:6px}
 </style>
@@ -338,7 +341,7 @@ else:
     tv_share = result.pv_tv_m / (result.pv_stage1_m + result.pv_tv_m) if (result.pv_stage1_m + result.pv_tv_m) > 0 else 0.0
 
     # KPIs row
-    k1, k2, k3, k4, k5 = st.columns([1.1, 1.1, 1.0, 1.0, 1.2])
+    k1, k2, k3, k4, k5 = st.columns([1.1, 1.1, 1.0, 1.0, 1.2], gap="large")
 with k1:
     st.markdown(f"<div class='kpi'><h4>Fair Value / Share</h4><div class='v'>{format_usd(result.fair_ps)}</div></div>", unsafe_allow_html=True)
 with k2:
@@ -348,9 +351,15 @@ with k3:
 with k4:
     st.markdown(f"<div class='kpi'><h4>Levered Beta</h4><div class='v'>{result.beta:.2f}</div></div>", unsafe_allow_html=True)
 with k5:
-    st.markdown(f"<div class='kpi'><h4>Valuation vs Price</h4><div class='v'><span style='color:{tag_color}'>{('UNDERVALUED' if disc>0 else 'OVERVALUED')} {abs(disc)*100:.1f}%</span></div></div>", unsafe_allow_html=True)
+    badge_class = 'up' if disc>0 else 'down'
+    st.markdown(
+        f"<div class='kpi'><h4>Valuation vs Price</h4><div class='v'><span class='badge {badge_class}'>"
+        f"{('UNDERVALUED' if disc>0 else 'OVERVALUED')} {abs(disc)*100:.1f}%" 
+        f"</span></div></div>",
+        unsafe_allow_html=True,
+    )
 
-    s1, s2, s3 = st.columns([1.0, 1.0, 1.0])
+    s1, s2, s3 = st.columns([1.0, 1.0, 1.0], gap="large")
 with s1:
     st.markdown(f"<div class='kpi'><h4>PV Stage 1</h4><div class='v'>{format_usd(result.pv_stage1_m*1e6)}</div></div>", unsafe_allow_html=True)
 with s2:
