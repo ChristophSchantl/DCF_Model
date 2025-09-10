@@ -356,12 +356,10 @@ with st.sidebar:
     with col_t[0]:
         st.text_input("Ticker", key="ticker")
     with col_t[1]:
-        if st.button("↻ Live", help="Fetch price & shares via yfinance"):
-            px, sh_m = fetch_live_defaults(st.session_state.ticker.strip())
+        if st.button("↻ Live Px", help="Fetch last price via yfinance"):
+            px, _ = fetch_live_defaults(st.session_state.ticker.strip())
             if px is not None:
                 st.session_state.price = round(float(px), 2)
-            if sh_m is not None:
-                st.session_state.shares_m = round(float(sh_m), 2)
             st.rerun()
 
     st.number_input("Price", min_value=0.0, value=float(st.session_state.price), step=0.01, key="price")
@@ -369,10 +367,14 @@ with st.sidebar:
     # Start FCFE auto-fill via Levered FCF (TTM)
     lfcf_clicked = st.button("↻ LFCF TTM", help="Auto‑fill from Yahoo 'Levered Free Cash Flow' (TTM). Falls nicht verfügbar, FCFE TTM = CFO + CapEx + NetDebt.")
     if lfcf_clicked:
+        prev_sh = st.session_state.get("shares_m")
         v, br = fetch_levered_fcf_ttm(st.session_state.ticker.strip())
         if v is not None:
             st.session_state["start_fcfe"] = round(float(v), 2)
             st.session_state["_fcfe_breakdown"] = br
+        # never touch shares here
+        if prev_sh is not None:
+            st.session_state["shares_m"] = prev_sh
         st.rerun()
     st.number_input("Start FCFE (USD m)", min_value=0.0, value=float(st.session_state.start_fcfe), step=10.0, key="start_fcfe")
     brk = st.session_state.get("_fcfe_breakdown")
