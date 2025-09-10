@@ -442,7 +442,7 @@ else:
             badge_class = 'up' if disc>0 else 'down'
             st.markdown(
                 f"<div class='kpi'><h4>Valuation vs Price</h4><div class='v'><span class='badge {badge_class}'>"
-                f"{('UNDERVALUED' if disc>0 else 'OVERVALUED')} {abs(disc)*100:.1f}%" 
+                f"{('UNDER-V' if disc>0 else 'OVER-V')} {abs(disc)*100:.1f}%" 
                 f"</span></div></div>",
                 unsafe_allow_html=True,
             )
