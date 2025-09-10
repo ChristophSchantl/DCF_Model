@@ -35,12 +35,12 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-.kpi{background:#0b1220;color:#e6e9ef;padding:8px 10px;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.10);width:100%}
-.kpi h4{margin:0;font-size:12px;color:#b3b8c4}
-.kpi .v{font-size:18px;font-weight:700}
+.kpi{background:#f7f9fc;color:#0f172a;padding:8px 10px;border-radius:12px;border:1px solid #e5e7eb;box-shadow:0 1px 3px rgba(0,0,0,.04);width:100%}
+.kpi h4{margin:0;font-size:12px;color:#64748b}
+.kpi .v{font-size:18px;font-weight:700;color:#0f172a}
 .badge{padding:2px 8px;border-radius:6px;font-weight:800}
-.badge.up{background:rgba(34,197,94,.15);color:#22c55e}
-.badge.down{background:rgba(239,68,68,.15);color:#ef4444}
+.badge.up{background:rgba(34,197,94,.15);color:#15803d}
+.badge.down{background:rgba(239,68,68,.12);color:#b91c1c}
 .subtle{color:#94a3b8;font-size:10px}
 .section{margin-top:6px}
 </style>
