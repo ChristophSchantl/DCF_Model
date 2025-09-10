@@ -1,5 +1,4 @@
-# streamlit_dcf_fcfe_2stage_app.py
-# -*- coding: utf-8 -*-
+
 """
 Investor‑grade Streamlit app for a 2‑Stage FCFE DCF.
 
@@ -35,12 +34,12 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    .metric-row {gap: 12px;}
-    .kpi {background: #0b1220; color: #e6e9ef; padding: 14px 16px; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.15);} 
-    .kpi h4{margin:0;font-size:14px;color:#b3b8c4;} .kpi .v{font-size:22px;font-weight:700;margin-top:4px;}
-    .subtle{color:#94a3b8; font-size:12px}
-    .section{margin-top:14px;}
-    </style>
+.kpi{background:#0b1220;color:#e6e9ef;padding:8px 10px;border-radius:12px;box-shadow:0 1px 6px rgba(0,0,0,.12)}
+.kpi h4{margin:0;font-size:12px;color:#b3b8c4;line-height:1.1}
+.kpi .v{font-size:18px;font-weight:700;line-height:1.1}
+.subtle{color:#94a3b8;font-size:11px}
+.section{margin-top:8px}
+</style>
     """,
     unsafe_allow_html=True,
 )
