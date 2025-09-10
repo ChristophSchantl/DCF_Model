@@ -305,6 +305,8 @@ for k, v in DEFAULTS.items():
 # Sidebar Inputs
 # ─────────────────────────────────────────────────────────────
 
+export_now = False  # ensure defined
+
 with st.sidebar:
     st.header("Inputs")
 
@@ -321,27 +323,34 @@ with st.sidebar:
             st.rerun()
 
     price = st.number_input("Price", min_value=0.0, value=float(st.session_state.price), step=0.01, key="price")
-    fcfe_cols = st.columns([3,1,1])
-with fcfe_cols[0]:
-    start_fcfe = st.number_input("Start FCFE (USD m)", min_value=0.0, value=float(st.session_state.start_fcfe), step=10.0, key="start_fcfe")
-with fcfe_cols[1]:
-    if st.button("↻ TTM", help="Fetch FCFE from last 4 quarters"):
-        v, br, cur = fetch_start_fcfe_from_yf(st.session_state.ticker.strip(), mode="TTM")
-        if v is not None:
-            st.session_state.start_fcfe = round(float(v), 2)
-            st.session_state["_fcfe_breakdown"] = {"mode":"TTM", "currency":cur, **br}
-            st.rerun()
-with fcfe_cols[2]:
-    if st.button("↻ FY", help="Fetch FCFE from last fiscal year"):
-        v, br, cur = fetch_start_fcfe_from_yf(st.session_state.ticker.strip(), mode="FY")
-        if v is not None:
-            st.session_state.start_fcfe = round(float(v), 2)
-            st.session_state["_fcfe_breakdown"] = {"mode":"FY", "currency":cur, **br}
-            st.rerun()
 
-brk = st.session_state.get("_fcfe_breakdown")
-if brk:
-    st.caption(f"FCFE {brk['mode']} in {brk['currency']} → CFO={brk['cfo_m']:,.1f}m, CapEx={brk['capex_m']:,.1f}m, NetDebt={brk['net_debt_m']:,.1f}m ⇒ FCFE={brk['fcfe_m']:,.1f}m USD")
+    # Start FCFE + fetchers
+    fcfe_cols = st.columns([3, 1, 1])
+    with fcfe_cols[0]:
+        start_fcfe = st.number_input("Start FCFE (USD m)", min_value=0.0, value=float(st.session_state.start_fcfe), step=10.0, key="start_fcfe")
+    with fcfe_cols[1]:
+        if st.button("↻ TTM", help="Fetch FCFE from last 4 quarters"):
+            v, br, cur = fetch_start_fcfe_from_yf(st.session_state.ticker.strip(), mode="TTM")
+            if v is not None:
+                st.session_state.start_fcfe = round(float(v), 2)
+                st.session_state["_fcfe_breakdown"] = {"mode": "TTM", "currency": cur, **br}
+                st.rerun()
+    with fcfe_cols[2]:
+        if st.button("↻ FY", help="Fetch FCFE from last fiscal year"):
+            v, br, cur = fetch_start_fcfe_from_yf(st.session_state.ticker.strip(), mode="FY")
+            if v is not None:
+                st.session_state.start_fcfe = round(float(v), 2)
+                st.session_state["_fcfe_breakdown"] = {"mode": "FY", "currency": cur, **br}
+                st.rerun()
+
+    brk = st.session_state.get("_fcfe_breakdown")
+    if brk:
+        st.caption(
+            f"FCFE {brk['mode']} in {brk['currency']} → CFO={brk['cfo_m']:,.1f}m, CapEx={brk['capex_m']:,.1f}m, "
+            f"NetDebt={brk['net_debt_m']:,.1f}m ⇒ FCFE={brk['fcfe_m']:,.1f}m USD"
+        )
+
+    # Core knobs
     horizon = st.select_slider("Horizon (years)", options=list(range(5, 11)), value=int(st.session_state.horizon), key="horizon")
     growth = st.slider("Growth %/yr", min_value=-10.0, max_value=25.0, value=float(st.session_state.growth), step=0.1, key="growth")
     shares_m = st.number_input("Shares (m)", min_value=0.01, value=float(st.session_state.shares_m), step=0.01, key="shares_m")
@@ -364,7 +373,6 @@ if brk:
     tv_target = st.number_input("TV share target (0..1)", min_value=0.05, max_value=0.95, value=float(st.session_state.tv_target), step=0.01, key="tv_target")
     lock_tv = st.checkbox("Lock TV share (solve g)", value=bool(st.session_state.lock_tv), key="lock_tv")
     if st.button("Cap TV share now"):
-        # will be computed in main calc section using current state
         st.session_state["__cap_tv_now__"] = True
         st.rerun()
 
@@ -373,7 +381,6 @@ if brk:
     save_label = st.text_input("Label", value="run")
     do_zip = st.checkbox("ZIP bundle", value=True)
     export_now = st.button("Export current run")
-
 
 # ─────────────────────────────────────────────────────────────
 # Calculation
@@ -617,3 +624,4 @@ else:
                 )
 
 st.caption("Model: FCFE DCF, levered β via Hamada + Blume, CAPM cost of equity. Perpetual g < r constraint enforced.")
+
