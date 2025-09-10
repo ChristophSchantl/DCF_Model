@@ -35,10 +35,10 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-.kpi{background:#0b1220;color:#e6e9ef;padding:6px 10px;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.12);display:inline-block;min-width:140px;margin:14px 18px}
-.kpi h4{margin:0;font-size:11px;color:#b3b8c4;line-height:1.1}
-.kpi .v{font-size:16px;font-weight:700;line-height:1.1}
-.badge{padding:2px 6px;border-radius:6px;font-weight:800}
+.kpi{background:#0b1220;color:#e6e9ef;padding:8px 10px;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.10);width:100%}
+.kpi h4{margin:0;font-size:12px;color:#b3b8c4}
+.kpi .v{font-size:18px;font-weight:700}
+.badge{padding:2px 8px;border-radius:6px;font-weight:800}
 .badge.up{background:rgba(34,197,94,.15);color:#22c55e}
 .badge.down{background:rgba(239,68,68,.15);color:#ef4444}
 .subtle{color:#94a3b8;font-size:10px}
@@ -334,50 +334,51 @@ st.title("DCF – 2‑Stage FCFE")
 if error_msg:
     st.error(f"Fehler: {error_msg}")
 else:
-    # Header block
+    # Derived metrics
     disc = 0.0 if result.discount_vs_price is None else float(result.discount_vs_price)
-    tag = "undervalued" if disc > 0 else "overvalued"
     tag_color = "#22c55e" if disc > 0 else "#ef4444"
     tv_share = result.pv_tv_m / (result.pv_stage1_m + result.pv_tv_m) if (result.pv_stage1_m + result.pv_tv_m) > 0 else 0.0
 
-    # KPIs row
-    k1, k2, k3, k4, k5 = st.columns([1.1, 1.1, 1.0, 1.0, 1.2], gap="large")
-with k1:
-    st.markdown(f"<div class='kpi'><h4>Fair Value / Share</h4><div class='v'>{format_usd(result.fair_ps)}</div></div>", unsafe_allow_html=True)
-with k2:
-    st.markdown(f"<div class='kpi'><h4>Current Price</h4><div class='v'>{format_usd(float(st.session_state.price))}</div></div>", unsafe_allow_html=True)
-with k3:
-    st.markdown(f"<div class='kpi'><h4>Cost of Equity</h4><div class='v'>{result.r*100:.2f}%</div></div>", unsafe_allow_html=True)
-with k4:
-    st.markdown(f"<div class='kpi'><h4>Levered Beta</h4><div class='v'>{result.beta:.2f}</div></div>", unsafe_allow_html=True)
-with k5:
-    badge_class = 'up' if disc>0 else 'down'
-    st.markdown(
-        f"<div class='kpi'><h4>Valuation vs Price</h4><div class='v'><span class='badge {badge_class}'>"
-        f"{('UNDERVALUED' if disc>0 else 'OVERVALUED')} {abs(disc)*100:.1f}%" 
-        f"</span></div></div>",
-        unsafe_allow_html=True,
-    )
+    # ── KPI Top Row ─────────────────────────────────────
+    top = st.container()
+    with top:
+        c1, c2, c3, c4, c5 = st.columns(5, gap="medium")
+        with c1:
+            st.markdown(f"<div class='kpi'><h4>Fair Value / Share</h4><div class='v'>{format_usd(result.fair_ps)}</div></div>", unsafe_allow_html=True)
+        with c2:
+            st.markdown(f"<div class='kpi'><h4>Current Price</h4><div class='v'>{format_usd(float(st.session_state.price))}</div></div>", unsafe_allow_html=True)
+        with c3:
+            st.markdown(f"<div class='kpi'><h4>Cost of Equity</h4><div class='v'>{result.r*100:.2f}%</div></div>", unsafe_allow_html=True)
+        with c4:
+            st.markdown(f"<div class='kpi'><h4>Levered Beta</h4><div class='v'>{result.beta:.2f}</div></div>", unsafe_allow_html=True)
+        with c5:
+            badge_class = 'up' if disc>0 else 'down'
+            st.markdown(
+                f"<div class='kpi'><h4>Valuation vs Price</h4><div class='v'><span class='badge {badge_class}'>"
+                f"{('UNDERVALUED' if disc>0 else 'OVERVALUED')} {abs(disc)*100:.1f}%" 
+                f"</span></div></div>",
+                unsafe_allow_html=True,
+            )
 
-    s1, s2, s3 = st.columns([1.0, 1.0, 1.0], gap="large")
-with s1:
-    st.markdown(f"<div class='kpi'><h4>PV Stage 1</h4><div class='v'>{format_usd(result.pv_stage1_m*1e6)}</div></div>", unsafe_allow_html=True)
-with s2:
-    st.markdown(f"<div class='kpi'><h4>PV Terminal</h4><div class='v'>{format_usd(result.pv_tv_m*1e6)}</div></div>", unsafe_allow_html=True)
-with s3:
-    color_tv = "#22c55e" if (0 < float(st.session_state.tv_target) < 1 and tv_share <= float(st.session_state.tv_target)) else "#ef4444"
-    st.markdown(
-        f"<div class='kpi'><h4>TV Share</h4><div class='v'><span style='color:{color_tv}'>{tv_share*100:.1f}%</span>"
-        + (f" <span class='subtle'>(limit {float(st.session_state.tv_target)*100:.0f}%)</span>" if 0 < float(st.session_state.tv_target) < 1 else "")
-        + "</div></div>",
-        unsafe_allow_html=True,
-    )
+    # ── KPI Second Row ─────────────────────────────────
+    sub = st.container()
+    with sub:
+        s1, s2, s3 = st.columns(3, gap="medium")
+        with s1:
+            st.markdown(f"<div class='kpi'><h4>PV Stage 1</h4><div class='v'>{format_usd(result.pv_stage1_m*1e6)}</div></div>", unsafe_allow_html=True)
+        with s2:
+            st.markdown(f"<div class='kpi'><h4>PV Terminal</h4><div class='v'>{format_usd(result.pv_tv_m*1e6)}</div></div>", unsafe_allow_html=True)
+        with s3:
+            color_tv = "#22c55e" if (0 < float(st.session_state.tv_target) < 1 and tv_share <= float(st.session_state.tv_target)) else "#ef4444"
+            st.markdown(
+                f"<div class='kpi'><h4>TV Share</h4><div class='v'><span style='color:{color_tv}'>{tv_share*100:.1f}%</span>"
+                + (f" <span class='subtle'>(limit {float(st.session_state.tv_target)*100:.0f}%)</span>" if 0 < float(st.session_state.tv_target) < 1 else "")
+                + "</div></div>",
+                unsafe_allow_html=True,
+            )
 
-    st.markdown(" ")
-
-    # Charts
-    c1, c2 = st.columns([1.7, 1.3])
-
+    # ── Charts Row ─────────────────────────────────────
+    c1, c2 = st.columns([1.6, 1.0], gap="large")
     with c1:
         fig = px.line(
             result.schedule,
@@ -391,7 +392,6 @@ with s3:
         last_v = float(result.schedule["FCFE (USD m)"].iat[-1])
         fig.add_annotation(x=last_y, y=last_v, text=f"{last_v:,.1f} m", showarrow=True, arrowhead=2)
         st.plotly_chart(fig, use_container_width=True)
-
     with c2:
         wf = go.Figure(
             go.Waterfall(
@@ -414,7 +414,7 @@ with s3:
         hide_index=True,
     )
 
-    # ── Export block ───────────────────────────────────────
+# ── Export block ───────────────────────────────────────
     if export_now:
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         label = (save_label or "run").strip()
