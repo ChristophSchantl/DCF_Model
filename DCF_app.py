@@ -325,23 +325,24 @@ with st.sidebar:
     price = st.number_input("Price", min_value=0.0, value=float(st.session_state.price), step=0.01, key="price")
 
     # Start FCFE + fetchers
-    fcfe_cols = st.columns([3, 1, 1])
-    with fcfe_cols[0]:
-        start_fcfe = st.number_input("Start FCFE (USD m)", min_value=0.0, value=float(st.session_state.start_fcfe), step=10.0, key="start_fcfe")
-    with fcfe_cols[1]:
-        if st.button("↻ TTM", help="Fetch FCFE from last 4 quarters"):
-            v, br, cur = fetch_start_fcfe_from_yf(st.session_state.ticker.strip(), mode="TTM")
-            if v is not None:
-                st.session_state.start_fcfe = round(float(v), 2)
-                st.session_state["_fcfe_breakdown"] = {"mode": "TTM", "currency": cur, **br}
-                st.rerun()
-    with fcfe_cols[2]:
-        if st.button("↻ FY", help="Fetch FCFE from last fiscal year"):
-            v, br, cur = fetch_start_fcfe_from_yf(st.session_state.ticker.strip(), mode="FY")
-            if v is not None:
-                st.session_state.start_fcfe = round(float(v), 2)
-                st.session_state["_fcfe_breakdown"] = {"mode": "FY", "currency": cur, **br}
-                st.rerun()
+    # Start FCFE + fetchers (buttons first to avoid state-write conflicts)
+fcfe_cols = st.columns([1, 1, 3])
+with fcfe_cols[0]:
+    ttm_clicked = st.button("↻ TTM", help="Fetch FCFE from last 4 quarters")
+with fcfe_cols[1]:
+    fy_clicked = st.button("↻ FY", help="Fetch FCFE from last fiscal year")
+
+# If one of the fetch buttons is clicked, update state BEFORE the widget is created
+if ttm_clicked or fy_clicked:
+    mode = "TTM" if ttm_clicked else "FY"
+    v, br, cur = fetch_start_fcfe_from_yf(st.session_state.ticker.strip(), mode=mode)
+    if v is not None:
+        st.session_state["start_fcfe"] = round(float(v), 2)
+        st.session_state["_fcfe_breakdown"] = {"mode": mode, "currency": cur, **br}
+    st.rerun()
+
+with fcfe_cols[2]:
+    start_fcfe = st.number_input("Start FCFE (USD m)", min_value=0.0, value=float(st.session_state.start_fcfe), step=10.0, key="start_fcfe")
 
     brk = st.session_state.get("_fcfe_breakdown")
     if brk:
@@ -624,4 +625,3 @@ else:
                 )
 
 st.caption("Model: FCFE DCF, levered β via Hamada + Blume, CAPM cost of equity. Perpetual g < r constraint enforced.")
-
