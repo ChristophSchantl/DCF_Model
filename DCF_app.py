@@ -107,6 +107,89 @@ def fetch_live_defaults(tkr: str) -> Tuple[float | None, float | None]:
 
 
 # ─────────────────────────────────────────────────────────────
+# FCFE fetch from Yahoo Finance
+# ─────────────────────────────────────────────────────────────
+
+def fetch_start_fcfe_from_yf(tkr: str, mode: str = "TTM") -> Tuple[Optional[float], Dict[str, float], str]:
+    """Return (start_fcfe_m_USD, breakdown, reporting_currency).
+    mode: "TTM" = sum last 4 quarters; "FY" = last fiscal year.
+    FCFE ≈ CFO + CapEx + NetDebt (Issuance + Repayment). CapEx is usually negative.
+    """
+    try:
+        y = yf.Ticker(tkr)
+        # currency detection
+        cur = None
+        fi = getattr(y, "fast_info", None)
+        if fi and isinstance(fi, dict):
+            cur = fi.get("currency")
+        if not cur:
+            info = y.info or {}
+            cur = info.get("currency", "USD")
+        if str(cur).upper() == "GBP":
+            cur = "GBP"  # normalize
+        if str(cur).upper() == "GBP":
+            cur = "GBP"
+        if str(cur).upper() == "GBP":
+            cur = "GBP"
+        # load cashflow
+        df = None
+        if mode.upper() == "TTM":
+            df = y.quarterly_cashflow
+        else:
+            df = y.cashflow
+        if df is None or df.empty:
+            return (None, {}, str(cur or "USD").upper())
+        # aggregate series
+        if mode.upper() == "TTM":
+            cols = list(df.columns)[:4]
+            s = df[cols].fillna(0.0).sum(axis=1)
+        else:
+            col = list(df.columns)[0]
+            s = df[col].fillna(0.0)
+        def pick(keys: List[str]) -> float:
+            keys_n = [k.lower() for k in keys]
+            for idx in s.index:
+                name = str(idx).lower()
+                if any(k in name for k in keys_n):
+                    try:
+                        return float(s.loc[idx])
+                    except Exception:
+                        return 0.0
+            return 0.0
+        cfo = pick(["total cash from operating activities", "operating cash flow", "cash from operating activities"])  # +
+        capex = pick(["capital expenditures"])  # usually negative
+        iss = pick(["issuance of debt", "debt issued"])  # +
+        rep = pick(["repayment of debt", "debt repayment"])  # negative
+        net_debt = iss + rep
+        fcfe = cfo + capex + net_debt
+        # FX to USD
+        cur_up = str(cur or "USD").upper()
+        if cur_up == "GBP":
+            pair = "GBPUSD=X"
+        else:
+            pair = f"{cur_up}USD=X"
+        rate = 1.0
+        if cur_up != "USD":
+            try:
+                fx = yf.Ticker(pair)
+                h = fx.history(period="5d")
+                if not h.empty:
+                    rate = float(h["Close"].iloc[-1])
+            except Exception:
+                rate = 1.0
+        fcfe_usd = fcfe * rate
+        brk = {
+            "cfo_m": cfo / 1e6 * rate,
+            "capex_m": capex / 1e6 * rate,
+            "net_debt_m": net_debt / 1e6 * rate,
+            "fcfe_m": fcfe_usd / 1e6,
+            "fx": rate,
+        }
+        return (fcfe_usd / 1e6, brk, cur_up)
+    except Exception:
+        return (None, {}, "USD")
+
+# ─────────────────────────────────────────────────────────────
 # DCF Core
 # ─────────────────────────────────────────────────────────────
 
@@ -238,7 +321,27 @@ with st.sidebar:
             st.rerun()
 
     price = st.number_input("Price", min_value=0.0, value=float(st.session_state.price), step=0.01, key="price")
+    fcfe_cols = st.columns([3,1,1])
+with fcfe_cols[0]:
     start_fcfe = st.number_input("Start FCFE (USD m)", min_value=0.0, value=float(st.session_state.start_fcfe), step=10.0, key="start_fcfe")
+with fcfe_cols[1]:
+    if st.button("↻ TTM", help="Fetch FCFE from last 4 quarters"):
+        v, br, cur = fetch_start_fcfe_from_yf(st.session_state.ticker.strip(), mode="TTM")
+        if v is not None:
+            st.session_state.start_fcfe = round(float(v), 2)
+            st.session_state["_fcfe_breakdown"] = {"mode":"TTM", "currency":cur, **br}
+            st.rerun()
+with fcfe_cols[2]:
+    if st.button("↻ FY", help="Fetch FCFE from last fiscal year"):
+        v, br, cur = fetch_start_fcfe_from_yf(st.session_state.ticker.strip(), mode="FY")
+        if v is not None:
+            st.session_state.start_fcfe = round(float(v), 2)
+            st.session_state["_fcfe_breakdown"] = {"mode":"FY", "currency":cur, **br}
+            st.rerun()
+
+brk = st.session_state.get("_fcfe_breakdown")
+if brk:
+    st.caption(f"FCFE {brk['mode']} in {brk['currency']} → CFO={brk['cfo_m']:,.1f}m, CapEx={brk['capex_m']:,.1f}m, NetDebt={brk['net_debt_m']:,.1f}m ⇒ FCFE={brk['fcfe_m']:,.1f}m USD")
     horizon = st.select_slider("Horizon (years)", options=list(range(5, 11)), value=int(st.session_state.horizon), key="horizon")
     growth = st.slider("Growth %/yr", min_value=-10.0, max_value=25.0, value=float(st.session_state.growth), step=0.1, key="growth")
     shares_m = st.number_input("Shares (m)", min_value=0.01, value=float(st.session_state.shares_m), step=0.01, key="shares_m")
