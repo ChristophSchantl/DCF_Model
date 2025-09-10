@@ -442,7 +442,7 @@ else:
             badge_class = 'up' if disc>0 else 'down'
             st.markdown(
                 f"<div class='kpi'><h4>Valuation vs Price</h4><div class='v'><span class='badge {badge_class}'>"
-                f"{('UNDER-V' if disc>0 else 'OVER-V')} {abs(disc)*100:.1f}%" 
+                f"{('UNDERVALUED' if disc>0 else 'OVERVALUED')} {abs(disc)*100:.1f}%" 
                 f"</span></div></div>",
                 unsafe_allow_html=True,
             )
@@ -450,12 +450,8 @@ else:
     # ── KPI Second Row ─────────────────────────────────
     sub = st.container()
     with sub:
-        s1, s2, s3 = st.columns(3, gap="medium")
-        with s1:
-            st.markdown(f"<div class='kpi'><h4>PV Stage 1</h4><div class='v'>{format_usd(result.pv_stage1_m*1e6)}</div></div>", unsafe_allow_html=True)
-        with s2:
-            st.markdown(f"<div class='kpi'><h4>PV Terminal</h4><div class='v'>{format_usd(result.pv_tv_m*1e6)}</div></div>", unsafe_allow_html=True)
-        with s3:
+        c = st.columns(1)
+        with c[0]:
             color_tv = "#22c55e" if (0 < float(st.session_state.tv_target) < 1 and tv_share <= float(st.session_state.tv_target)) else "#ef4444"
             st.markdown(
                 f"<div class='kpi'><h4>TV Share</h4><div class='v'><span style='color:{color_tv}'>{tv_share*100:.1f}%</span>"
